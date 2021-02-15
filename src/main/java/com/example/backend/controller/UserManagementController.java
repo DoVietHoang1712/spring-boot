@@ -18,6 +18,7 @@ public class UserManagementController {
 
     @GetMapping()
     public List<User> getAllUsers() {
+        System.out.println("Test");
         return userRepository.findAll();
     }
 

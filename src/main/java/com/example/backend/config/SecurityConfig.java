@@ -2,6 +2,9 @@ package com.example.backend.config;
 
 import com.example.backend.constant.UserPermission;
 import com.example.backend.constant.UserRole;
+import com.example.backend.jwt.JwtConfig;
+import com.example.backend.jwt.JwtTokenVerifier;
+import com.example.backend.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +12,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,20 +25,26 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     PasswordEncoder passwordEncoder;
 
+    @Autowired
+    JwtConfig jwtConfig;
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig))
+                .addFilterAfter(new JwtTokenVerifier(jwtConfig), JwtUsernameAndPasswordAuthenticationFilter.class)
                 .authorizeRequests()
                 .antMatchers("/v1/**").hasRole(UserRole.USER.name())
                 .antMatchers(HttpMethod.GET, "/management/v1/**").hasAnyRole(UserRole.ADMIN.name(), UserRole.ADMINTRAINEE.name())
                 .antMatchers(HttpMethod.POST, "/management/v1/**").hasAuthority(UserPermission.COURSE_WRITE.getPermission())
                 .antMatchers(HttpMethod.PUT, "/management/v1/**").hasAuthority(UserPermission.COURSE_WRITE.getPermission())
                 .anyRequest()
-                .authenticated()
-                .and()
-                // .httpBasic();
-                .formLogin();
+                .authenticated();
+//                .and()
+//                .httpBasic();
+//                .formLogin();
     }
 
     @Override
